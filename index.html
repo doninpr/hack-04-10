@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- Include the CesiumJS JavaScript and CSS files -->
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.74/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.74/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <script>
+
+  	var IS_L_MOUSE_DOWN = false;
+  	var IS_R_MOUSE_DOWN = false;
+  	var PICKED_FEATURE = null;
+
+
+  	var buildEntityName = "Ваш объект";
+
+    // Your access token can be found at: https://cesium.com/ion/tokens.
+    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3YTlhOWI1NC0xNDVjLTQ2OTktYTA3Ni1hNjg0NjY5YmRiMGIiLCJpZCI6MzUyNzMsImlhdCI6MTYwMTY1OTk4NH0.X6zgMBiTt9wv4XigmkD6PcbqiFQeS5NGQ8MWHq3Vyzg';
+    // Initialize the Cesium Viewer in the HTML element with the `cesiumContainer` ID.
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      terrainProvider: Cesium.createWorldTerrain(),
+	  shadows: true,
+    });    
+    // Add Cesium OSM Buildings, a global 3D buildings layer.
+    const buildingTileset = viewer.scene.primitives.add(Cesium.createOsmBuildings());
+
+    //viewer.shadowMap.softShadows = true;
+
+    
+    var position = Cesium.Cartesian3.fromDegrees(
+	    131.91400180951004,43.132594637502585, 200
+	  );
+	  var heading = Cesium.Math.toRadians(135);
+	  var pitch = 0;
+	  var roll = 0;
+	  var hpr = new Cesium.HeadingPitchRoll(heading, pitch, roll);
+	  var orientation = Cesium.Transforms.headingPitchRollQuaternion(
+	    position,
+	    hpr
+	  );
+
+    var entity = viewer.entities.add({
+	    name: buildEntityName,
+	    position: position,
+	    orientation: orientation,
+	    model: {
+	      uri: 'building.glb',
+	      scale: 1,
+	      heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+	    },
+	  });
+
+    handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+
+    //MOVING ACTIONS
+    handler.setInputAction(function (movement) {
+      IS_L_MOUSE_DOWN = true;
+      PICKED_FEATURE = viewer.scene.pick(movement.position);
+    }, Cesium.ScreenSpaceEventType.LEFT_DOWN);
+
+    handler.setInputAction(function (movement) {
+      IS_L_MOUSE_DOWN = false;
+      PICKED_FEATURE = null;
+      viewer.scene.screenSpaceCameraController.enableInputs = true;
+    }, Cesium.ScreenSpaceEventType.LEFT_UP);
+
+    handler.setInputAction(function (movement) {
+      if(IS_L_MOUSE_DOWN && PICKED_FEATURE && PICKED_FEATURE.id && PICKED_FEATURE.id._name === buildEntityName){
+      	viewer.scene.screenSpaceCameraController.enableInputs = false;
+
+      	var cartesian = viewer.camera.pickEllipsoid(
+	        movement.endPosition,
+	        viewer.scene.globe.ellipsoid
+	      );
+      	PICKED_FEATURE.id.position = cartesian;
+      }
+
+      if(IS_R_MOUSE_DOWN && PICKED_FEATURE && PICKED_FEATURE.id && PICKED_FEATURE.id._name === buildEntityName){
+      	viewer.scene.screenSpaceCameraController.enableZoom = false;
+
+      	//console.log(PICKED_FEATURE, movement);
+
+      	//PICKED_FEATURE.id.position = cartesian;
+      }
+    }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+
+    var mapbox = new Cesium.MapboxImageryProvider({
+	    mapId: 'mapbox.mapbox-terrain-v2',
+	    accessToken: 'pk.eyJ1IjoiZG9uaW5wciIsImEiOiJjaXVxM3E4OTkwMDAwMm9wczBnYjR4bnJoIn0.7drt92qBRl7KJ6dLg0mrww',
+	    format: 'vector.pbf'
+	});
+
+	viewer.imageryLayers.addImageryProvider(mapbox);
+
+    //const mapboxTileset = viewer.scene.primitives.add(mapbox);
+
+    //ROTATING ACTIONS
+    handler.setInputAction(function (movement) {
+      IS_R_MOUSE_DOWN = true;
+      PICKED_FEATURE = viewer.scene.pick(movement.position);
+    }, Cesium.ScreenSpaceEventType.RIGHT_DOWN);
+
+    handler.setInputAction(function (movement) {
+      IS_R_MOUSE_DOWN = false;
+      PICKED_FEATURE = null;
+      viewer.scene.screenSpaceCameraController.enableZoom = true;
+    }, Cesium.ScreenSpaceEventType.RIGHT_UP);
+
+
+    //SET START FOR CAMERA
+    viewer.camera.flyTo({
+      destination : Cesium.Cartesian3.fromDegrees(131.91400180951004,43.132594637502585, 200),
+      orientation : {
+        heading : Cesium.Math.toRadians(0.0),
+        pitch : Cesium.Math.toRadians(-15.0),
+      }
+    });
+
+  </script>
+ </div>
+</body>
+</html>
