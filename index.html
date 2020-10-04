@@ -218,11 +218,6 @@
 	margin-bottom: 10px;
 }
 
-	.hidden {
-		opacity: 0;
-		pointer-events: none;
-		display: none;
-	}
 
 	.cesium-button.cesium-vrButton {
 		position: fixed!important;
@@ -231,6 +226,7 @@
 	    width: 30px!important;
 	    height: 30px!important;
 	}
+
 
 @media all and (max-width: 450px) {
 	#control_panel {
@@ -251,16 +247,23 @@
   <div id="cesiumContainer"></div>
   <div id="control_panel" class="cesium-viewer-toolbar">
   	<div class="can-toggle can-toggle--size-small">
-	  <input id="isolineShown" type="checkbox" onInput="setIsolinesShow()">
-	  <label for="isolineShown">
-	    <div class="can-toggle__switch" data-checked="On" data-unchecked="Off"></div>
-	    <div class="can-toggle__label-text">Изолинии</div>
-	  </label>
-	</div>
-	<div class="control_block">
-		<p>Загрузить файл проекта (.glb)</p>
-		<input type="file" id="gbl-file" accept=".glb" onInput="sendFile()" >
-	</div>
+  	  <input id="isolineShown" type="checkbox" onInput="setIsolinesShow()">
+  	  <label for="isolineShown">
+  	    <div class="can-toggle__switch" data-checked="On" data-unchecked="Off"></div>
+  	    <div class="can-toggle__label-text">Изолинии</div>
+  	  </label>
+  	</div>
+    <div class="can-toggle can-toggle--size-small">
+      <input id="hillsShown" type="checkbox" onInput="setHillsShow()">
+      <label for="hillsShown">
+        <div class="can-toggle__switch" data-checked="On" data-unchecked="Off"></div>
+        <div class="can-toggle__label-text">Выделить склоны</div>
+      </label>
+    </div>
+  	<div class="control_block">
+  		<p>Загрузить файл проекта (.glb)</p>
+  		<input type="file" id="gbl-file" accept=".glb" onInput="sendFile()" >
+  	</div>
   </div>
   <script>
 
@@ -278,7 +281,6 @@
     const viewer = new Cesium.Viewer('cesiumContainer', {
       terrainProvider: Cesium.createWorldTerrain(),
 	  shadows: true,
-	  vrButton: true,
     });    
     // Add Cesium OSM Buildings, a global 3D buildings layer.
     const buildingTileset = viewer.scene.primitives.add(Cesium.createOsmBuildings());
@@ -427,13 +429,22 @@
       }
     }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
 
-    var mapbox = new Cesium.MapboxImageryProvider({
-	    mapId: 'mapbox.mapbox-terrain-v2',
-	    accessToken: 'pk.eyJ1IjoiZG9uaW5wciIsImEiOiJjaXVxM3E4OTkwMDAwMm9wczBnYjR4bnJoIn0.7drt92qBRl7KJ6dLg0mrww',
-	    hasAlphaChannel: true,
-	});
+    var mapboxHillsStyle = new Cesium.MapboxStyleImageryProvider({
+        username: 'doninpr',
+        styleId: 'ckfthxwpo33yo1ammzy1kjlyh',
+        accessToken: 'pk.eyJ1IjoiZG9uaW5wciIsImEiOiJjaXVxM3E4OTkwMDAwMm9wczBnYjR4bnJoIn0.7drt92qBRl7KJ6dLg0mrww'
+    });
 
-	mapbox.defaultAlpha = 0.87;
+    var mapboxHillsStyleProvider = viewer.imageryLayers.addImageryProvider(mapboxHillsStyle);
+    mapboxHillsStyleProvider.show = false;
+
+    var mapbox = new Cesium.MapboxStyleImageryProvider({
+        username: 'doninpr',
+        styleId: 'ckfui7psn0qya19nyl9z4ye14', 
+        accessToken: 'pk.eyJ1IjoiZG9uaW5wciIsImEiOiJjaXVxM3E4OTkwMDAwMm9wczBnYjR4bnJoIn0.7drt92qBRl7KJ6dLg0mrww'
+    });
+
+	  mapbox.defaultAlpha = 0.87;
 
     var mapboxProvider = viewer.imageryLayers.addImageryProvider(mapbox);
 
@@ -470,6 +481,12 @@
     	mapboxProvider.show = status;
     };
 
+    function setHillsShow() {
+      var status = document.getElementById('hillsShown').checked;
+      console.log(status);
+      mapboxHillsStyleProvider.show = status;
+    };
+
     function sendFile() {
     	let file = document.getElementById("gbl-file").files[0];
 		fetch('http://176.57.215.25:8000/files/', {method: "POST", body: file})
@@ -492,12 +509,10 @@
   			});
     }
 
-
-
     $('.cesium-vrButton').click(() => {
     	$('#control_panel').toggleClass('hidden');
-
     });
+
   </script>
 </body>
 </html>
